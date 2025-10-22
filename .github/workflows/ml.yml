@@ -1,72 +1,45 @@
-name: CI/CD MLflow
+name: CI/CD: pipeline MLflow
 
 on:
   push:
-    branches: [ main ]
-    paths:
-      - ".github/workflows/ml.yml"
-      - "mlflow-deploy/**"
+    branches: [main]
   workflow_dispatch:
 
 jobs:
-  build-train:
+  ml_pipeline:
     runs-on: ubuntu-latest
 
-    # Todos los comandos se ejecutan dentro de mlflow-deploy/
+    # Todos los "run:" se ejecutan dentro de mlflow-deploy
     defaults:
       run:
+        shell: bash
         working-directory: mlflow-deploy
 
     steps:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Setup Python
+      - name: Set up Python
         uses: actions/setup-python@v5
         with:
-          python-version: "3.10"
+          python-version: '3.10'
 
-      - name: Cache pip
-        uses: actions/cache@v4
-        with:
-          path: ~/.cache/pip
-          key: ${{ runner.os }}-pip-${{ hashFiles('mlflow-deploy/requirements.txt') }}
-          restore-keys: ${{ runner.os }}-pip-
-
-      - name: Dependencias del sistema
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y build-essential
-
-      - name: Instalar dependencias (Makefile: install)
+      - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
-          make install
-        
-        # pip install -r requirements.txt && pip install mlflow scikit-learn pandas numpy joblib
+          pip install -r requirements.txt
 
-      - name: Configurar tracking local de MLflow
+      - name: Train
         run: |
-          echo "MLFLOW_TRACKING_URI=file://$GITHUB_WORKSPACE/mlruns" >> $GITHUB_ENV
-          echo "MLFLOW_ARTIFACT_URI=file://$GITHUB_WORKSPACE/mlruns" >> $GITHUB_ENV
+          make train
 
-      - name: Entrenar (Makefile: train)
-        run: make train
-        # Alternativa: python src/train.py
-
-      - name: Validar (Makefile: test) – opcional
+      - name: Validate
         run: |
-          if [ -f src/validate.py ]; then
-            make test || true
-          else
-            echo "No hay src/validate.py; se omite validación."
-          fi
+          make test
 
-      - name: Subir artefactos (modelo + mlruns)
+      - name: Upload MLflow artifacts
+        if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: modelo-y-mlruns
-          path: |
-            mlruns/**/*
-            model.pkl
-          if-no-files-found: warn
+          name: mlruns
+          path: mlflow-deploy/mlruns
