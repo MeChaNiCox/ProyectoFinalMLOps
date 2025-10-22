@@ -33,12 +33,26 @@ def binarize_quality(df: pd.DataFrame, target_col: str, thr: int):
     return X, y
 
 def build_pipeline(model_kind: str, cfg):
-    # Todas las columnas del dataset son numéricas -> escalamos numéricas
-    pre = ColumnTransformer(
-        transformers=[("num", StandardScaler(), "passthrough")],
-        remainder="drop",
-        verbose_feature_names_out=False
-    )
+    # Todas las columnas predictoras son numéricas → escalamos todo con StandardScaler
+    steps = [("scaler", StandardScaler())]
+
+    if model_kind == "logreg":
+        clf = LogisticRegression(
+            C=cfg["model"]["C"],
+            max_iter=cfg["model"]["max_iter"]
+        )
+    elif model_kind == "rf":
+        clf = RandomForestClassifier(
+            n_estimators=cfg["model"]["n_estimators"],
+            max_depth=cfg["model"]["max_depth"],
+            random_state=cfg["data"]["random_state"]
+        )
+    else:
+        raise ValueError("model.kind debe ser 'logreg' o 'rf'")
+
+    steps.append(("clf", clf))
+    return Pipeline(steps=steps)
+
 
     if model_kind == "logreg":
         clf = LogisticRegression(C=cfg["model"]["C"], max_iter=cfg["model"]["max_iter"])
