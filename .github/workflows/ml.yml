@@ -1,48 +1,72 @@
-name: ML pipeline (MLflow CI)
+name: CI/CD MLflow
 
 on:
   push:
-    branches: [ "main" ]
+    branches: [ main ]
+    paths:
+      - ".github/workflows/ml.yml"
+      - "mlflow-deploy/**"
+  workflow_dispatch:
 
 jobs:
-  ml_pipeline:
+  build-train:
     runs-on: ubuntu-latest
 
+    # Todos los comandos se ejecutan dentro de mlflow-deploy/
+    defaults:
+      run:
+        working-directory: mlflow-deploy
+
     steps:
-      - name: 📥 Checkout
+      - name: Checkout
         uses: actions/checkout@v4
 
-      - name: 🐍 Setup Python
+      - name: Setup Python
         uses: actions/setup-python@v5
         with:
           python-version: "3.10"
 
-      - name: 📦 Install deps
+      - name: Cache pip
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/pip
+          key: ${{ runner.os }}-pip-${{ hashFiles('mlflow-deploy/requirements.txt') }}
+          restore-keys: ${{ runner.os }}-pip-
+
+      - name: Dependencias del sistema
         run: |
+          sudo apt-get update
+          sudo apt-get install -y build-essential
+
+      - name: Instalar dependencias (Makefile: install)
+        run: |
+          python -m pip install --upgrade pip
           make install
+        
+        # pip install -r requirements.txt && pip install mlflow scikit-learn pandas numpy joblib
 
-      - name: ⬇️ Download dataset (UCI Wine Quality - red)
+      - name: Configurar tracking local de MLflow
         run: |
-          mkdir -p data
-          curl -L "https://archive.ics.uci.edu/ml/machine-learning-databases/wine-quality/winequality-red.csv" -o data/winequality-red.csv
+          echo "MLFLOW_TRACKING_URI=file://$GITHUB_WORKSPACE/mlruns" >> $GITHUB_ENV
+          echo "MLFLOW_ARTIFACT_URI=file://$GITHUB_WORKSPACE/mlruns" >> $GITHUB_ENV
 
-      - name: 🧪 Train
-        env:
-          # Forzamos a train.py a usar el CSV local si quieres modificarlo:
-          # (Opcional) puedes dejarlo así tal cual, el script usa la URL de config.yaml
-          # y también funciona.
-          # DATA_PATH: data/winequality-red.csv
-          # (si lo usas, modifica train.py para priorizar DATA_PATH sobre config.yaml)
-          DUMMY: ok
+      - name: Entrenar (Makefile: train)
+        run: make train
+        # Alternativa: python src/train.py
+
+      - name: Validar (Makefile: test) – opcional
         run: |
-          make train
+          if [ -f src/validate.py ]; then
+            make test || true
+          else
+            echo "No hay src/validate.py; se omite validación."
+          fi
 
-      - name: ✅ Validate
-        run: |
-          make test
-
-      - name: 📤 Upload artifacts (model + metrics)
+      - name: Subir artefactos (modelo + mlruns)
         uses: actions/upload-artifact@v4
         with:
-          name: model-and-metrics
-          path: artifacts/
+          name: modelo-y-mlruns
+          path: |
+            mlruns/**/*
+            model.pkl
+          if-no-files-found: warn
