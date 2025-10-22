@@ -1,0 +1,19 @@
+experiment_name: "wine-quality-red"
+tracking_uri: "file:./mlruns"   # MLflow local (carpeta mlruns)
+
+data:
+  url: "https://archive.ics.uci.edu/ml/machine-learning-databases/wine-quality/winequality-red.csv"
+  sep: ";"
+  target: "quality"
+  # binarizamos: 1 si calidad >= 6, 0 si no
+  binarize_threshold: 6
+  test_size: 0.2
+  random_state: 42
+
+model:
+  kind: "logreg"          # "logreg" o "rf"
+  C: 1.0                  # para logreg
+  max_iter: 200
+  # para random forest, por si lo usas:
+  n_estimators: 200
+  max_depth: 6
