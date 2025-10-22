@@ -15,6 +15,6 @@ def main(metrics_path: str, threshold: float):
 if __name__ == "__main__":
     p = argparse.ArgumentParser()
     p.add_argument("--metrics", default="artifacts/metrics.json")
-    p.add_argument("--threshold", type=float, default=0.65)  # ajusta a gusto
+    p.add_argument("--threshold", type=float, default=0.65)  
     args = p.parse_args()
     main(args.metrics, args.threshold)

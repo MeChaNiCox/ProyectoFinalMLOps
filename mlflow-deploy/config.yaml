@@ -14,6 +14,6 @@ model:
   kind: "logreg"          # "logreg" o "rf"
   C: 1.0                  # para logreg
   max_iter: 200
-  # para random forest, por si lo usas:
+  # para random forest
   n_estimators: 200
   max_depth: 6

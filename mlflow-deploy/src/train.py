@@ -24,7 +24,7 @@ def load_config(cfg_path: str):
         return yaml.safe_load(f)
 
 def load_data(url: str, sep: str) -> pd.DataFrame:
-    # Carga desde URL; localmente puedes usar data/winequality-red.csv si ya lo tienes.
+    # Carga desde URL; 
     return pd.read_csv(url, sep=sep)
 
 def binarize_quality(df: pd.DataFrame, target_col: str, thr: int):
