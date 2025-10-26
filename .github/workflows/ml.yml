@@ -43,3 +43,52 @@ jobs:
         with:
           name: mlruns
           path: mlflow-deploy/mlruns
+	
+      - name: Upload MLflow runs
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: mlruns
+          path: mlflow-deploy/mlruns
+	
+
+  deploy:
+    name: Deploy (publicar modelo como Release)
+    needs: [ml_pipeline]           # se ejecuta después y sólo si ml_pipeline fue OK
+    if: ${{ success() }}
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write              # necesario para crear Releases con GITHUB_TOKEN
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Descargar artifacts (modelo/metrics)
+        uses: actions/download-artifact@v4
+        with:
+          name: artifacts
+          path: dist_artifacts
+
+      - name: Descargar artifacts (mlruns)
+        uses: actions/download-artifact@v4
+        with:
+          name: mlruns
+          path: dist_mlruns
+
+      - name: Empaquetar mlruns en .zip
+        run: |
+          cd dist_mlruns
+          zip -r ../mlruns.zip .
+          cd -
+
+      - name: Crear Release y adjuntar archivos
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: "model-${{ github.sha }}"
+          name: "ML model – ${{ github.sha }}"
+          draft: false
+          prerelease: false
+          files: |
+            dist_artifacts/model.pkl
+            dist_artifacts/metrics.json
+            mlruns.zip
