@@ -1,4 +1,4 @@
-name: CI/CD: pipeline MLflow
+﻿name: CI/CD: pipeline MLflow
 
 on:
   push:
@@ -43,7 +43,7 @@ jobs:
           path: mlflow-deploy/mlruns
 
   deploy:
-    # Se ejecuta solo si el job anterior terminó OK
+    # Se ejecuta solo si el job anterior terminÃ³ OK
     needs: [ml_pipeline]
     if: ${{ success() }}
     runs-on: ubuntu-latest
@@ -70,3 +70,4 @@ jobs:
           name: "Model run #${{ github.run_number }}"
           draft: true
           files: mlruns.zip
+
