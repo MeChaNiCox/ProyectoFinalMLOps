@@ -85,7 +85,7 @@ jobs:
           name: "Model Run #${{ github.run_number }}"
           draft: false
           body: |
-            🚀 Modelo desplegado automáticamente con éxito.
+            Modelo desplegado automáticamente con éxito.
 
             **Métricas de rendimiento:**
             - Accuracy: ${{ steps.metrics.outputs.accuracy }}
