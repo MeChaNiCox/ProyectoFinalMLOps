@@ -35,13 +35,9 @@ def binarize_quality(df: pd.DataFrame, target_col: str, thr: int):
     return X, y
 
 
-def build_pipeline(model_kind: str, cfg):
-    # Todas las columnas numéricas se escalan
-    pre = ColumnTransformer(
-        transformers=[("num", StandardScaler(), X.columns)],
-        remainder="drop",
-        verbose_feature_names_out=False
-    )
+def build_pipeline(model_kind: str, cfg, feature_columns):
+    """Construye el pipeline para las columnas numéricas"""
+    pre = StandardScaler()
 
     if model_kind == "logreg":
         clf = LogisticRegression(C=cfg["model"]["C"], max_iter=cfg["model"]["max_iter"])
@@ -54,8 +50,12 @@ def build_pipeline(model_kind: str, cfg):
     else:
         raise ValueError("model.kind debe ser 'logreg' o 'rf'")
 
-    pipe = Pipeline(steps=[("prep", pre), ("clf", clf)])
+    pipe = Pipeline(steps=[
+        ("scaler", pre),
+        ("clf", clf)
+    ])
     return pipe
+
 
 
 def main(config_path: str):
@@ -77,7 +77,7 @@ def main(config_path: str):
     )
 
     # Pipeline y entrenamiento
-    pipe = build_pipeline(cfg["model"]["kind"], cfg)
+    pipe = build_pipeline(cfg["model"]["kind"], cfg, X.columns)
 
     with mlflow.start_run(run_name="train"):
         mlflow.log_params({
